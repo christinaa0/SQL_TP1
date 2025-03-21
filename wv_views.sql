@@ -20,15 +20,14 @@ order by
     date_premiere_participation asc,
     date_derniere_action desc,
     nom_du_joueur asc;
-
-    create view all_players_elapsed_game as
+create view all_players_elapsed_game as
 select 
     players.pseudo as nom_du_joueur,
     parties.title_party as nom_de_la_partie,
     count(players_in_parties.id_player) as nombre_de_participants,
     min(turns.start_time) as date_premiere_action,
     max(turns.end_time) as date_derniere_action,
-    datediff(second, min(turns.start_time), max(turns.end_time)) as temps_ecoule_en_secondes
+    timestampdiff(second, min(turns.start_time), max(turns.end_time)) as temps_ecoule_en_secondes
 from 
     players
 join 
@@ -39,7 +38,6 @@ join
     turns on turns.id_party = parties.id_party
 group by 
     players.pseudo, parties.title_party;
-
 create view all_players_elapsed_tour as
 select 
     players.pseudo as nom_du_joueur,
@@ -47,7 +45,7 @@ select
     turns.id_turn as numero_du_tour,
     turns.start_time as debut_du_tour,
     players_play.start_time as date_decision,
-    datediff(second, turns.start_time, players_play.start_time) as temps_ecoule_pour_le_tour
+    timestampdiff(second, turns.start_time, players_play.start_time) as temps_ecoule_pour_le_tour
 from 
     players
 join 
@@ -64,7 +62,7 @@ select
     count(turns.id_turn) as nombre_de_tours_joues,
     (select count(*) from turns where turns.id_party = parties.id_party) as nombre_total_de_tours,
     parties.title_party as vainqueur_dependant_du_role,
-    avg(datediff(second, turns.start_time, players_play.start_time)) as temps_moyen_decision
+    avg(timestampdiff(second, turns.start_time, players_play.start_time)) as temps_moyen_decision
 from 
     players
 join 
