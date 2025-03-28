@@ -1,114 +1,101 @@
+use werewolfvillage;
+go
 
-alter table parties
+-- rendre les colonnes des clés primaires not null
+alter table dbo.parties
 alter column id_party int not null;
 
-alter table roles
+alter table dbo.roles
 alter column id_role int not null;
 
-alter table players
+alter table dbo.players
 alter column id_player int not null;
 
-alter table turns
-alter column id_turn int not null;
+alter table dbo.players_in_parties
+alter column id_party int not null;
 
-alter table players_play
+alter table dbo.players_in_parties
 alter column id_player int not null;
 
-alter table players_play
+alter table dbo.turns
 alter column id_turn int not null;
 
+alter table dbo.players_play
+alter column id_player int not null;
 
-alter table parties
-add primary key (id_party);
+alter table dbo.players_play
+alter column id_turn int not null;
 
-alter table roles
-add primary key (id_role);
+-- ajout des clés primaires
+alter table dbo.parties
+add constraint pk_parties primary key (id_party);
 
-alter table players
-add primary key (id_player);
+alter table dbo.roles
+add constraint pk_roles primary key (id_role);
 
-alter table turns
-add primary key (id_turn);
+alter table dbo.players
+add constraint pk_players primary key (id_player);
 
+alter table dbo.players_in_parties
+add constraint pk_players_in_parties primary key (id_party, id_player);
 
+alter table dbo.turns
+add constraint pk_turns primary key (id_turn);
 
-alter table players_in_parties
-add foreign key (id_party) references parties (id_party);
+alter table dbo.players_play
+add constraint pk_players_play primary key (id_player, id_turn);
 
-alter table players_in_parties
-add foreign key (id_player) references players (id_player);
+-- ajout des clés étrangères
+alter table dbo.players_in_parties
+add constraint fk_players_in_parties_party foreign key (id_party) references dbo.parties(id_party),
+    constraint fk_players_in_parties_player foreign key (id_player) references dbo.players(id_player),
+    constraint fk_players_in_parties_role foreign key (id_role) references dbo.roles(id_role);
 
-alter table players_in_parties
-add foreign key (id_role) references roles (id_role);
+alter table dbo.turns
+add constraint fk_turns_party foreign key (id_party) references dbo.parties(id_party);
 
-alter table turns
-add foreign key (id_party) references parties (id_party);
+alter table dbo.players_play
+add constraint fk_players_play_player foreign key (id_player) references dbo.players(id_player),
+    constraint fk_players_play_turn foreign key (id_turn) references dbo.turns(id_turn);
 
-alter table players_play
-add foreign key (id_player) references players (id_player);
+-- ajout de contraintes d'unicité et de validation
+alter table dbo.players
+add constraint uk_players_pseudo unique (pseudo);
 
-alter table players_play
-add foreign key (id_turn) references turns (id_turn);
+alter table dbo.players_in_parties
+add constraint chk_is_alive check (is_alive in ('oui', 'non'));
 
+-- optimisation des types de données
+alter table dbo.players
+alter column pseudo nvarchar(50);
 
--- Fausse donnée generer par chatGPT
+alter table dbo.roles
+alter column description_role nvarchar(20);
 
+alter table dbo.parties
+alter column title_party nvarchar(100);
 
-insert into parties (id_party, title_party)
-values (1, 'Party A'),
-       (2, 'Party B'),
-       (3, 'Party C');
+-- ajout d'une table pour les paramètres de la partie (lignes, colonnes, etc.)
+create table dbo.game_settings (
+    id_party int primary key,
+    rows int not null check (rows > 0),
+    columns int not null check (columns > 0),
+    max_turn_time int not null check (max_turn_time > 0),
+    total_turns int not null check (total_turns > 0),
+    obstacle_count int not null check (obstacle_count >= 0),
+    foreign key (id_party) references dbo.parties(id_party)
+);
 
+-- ajout d'une table pour les obstacles
+create table dbo.obstacles (
+    id_obstacle int primary key identity(1,1),
+    id_party int,
+    position_row int not null,
+    position_col int not null,
+    foreign key (id_party) references dbo.parties(id_party)
+);
 
-insert into roles (id_role, description_role)
-values (1, 'Role 1'),
-       (2, 'Role 2'),
-       (3, 'Role 3');
-
-
-insert into players (id_player, pseudo)
-values (1, 'Player1'),
-       (2, 'Player2'),
-       (3, 'Player3'),
-       (4, 'Player4'),
-       (5, 'Player5'),
-       (6, 'Player6'),
-       (7, 'Player7'),
-       (8, 'Player8'),
-       (9, 'Player9'),
-       (10, 'Player10');
-
-
-insert into players_in_parties (id_party, id_player, id_role, is_alive)
-values (1, 1, 1, 'yes'),
-       (1, 2, 2, 'yes'),
-       (1, 3, 3, 'yes'),
-       (2, 4, 1, 'yes'),
-       (2, 5, 2, 'yes'),
-       (2, 6, 3, 'yes'),
-       (3, 7, 1, 'yes'),
-       (3, 8, 2, 'yes'),
-       (3, 9, 3, 'yes'),
-       (3, 10, 1, 'yes');
-
-
-insert into turns (id_turn, id_party, start_time, end_time)
-values
-(1, 1, '2025-03-21 10:00:00', '2025-03-21 10:30:00'),
-(2, 1, '2025-03-21 11:00:00', '2025-03-21 11:30:00'),
-(3, 2, '2025-03-21 13:00:00', '2025-03-21 13:30:00'),
-(4, 2, '2025-03-21 14:00:00', '2025-03-21 14:30:00'),
-(5, 3, '2025-03-21 16:00:00', '2025-03-21 16:30:00');
-
-
-
--- Insérer des données dans la table players_play
-insert into players_play (id_player, id_turn, start_time, end_time, action, origin_position_col, origin_position_row, target_position_col, target_position_row)
-values (1, 1, '2025-03-21 10:05:00', '2025-03-21 10:10:00', 'MOVE', 'A', '1', 'B', '2'),
-       (2, 1, '2025-03-21 10:15:00', '2025-03-21 10:20:00', 'MOVE', 'C', '2', 'D', '3'),
-       (3, 2, '2025-03-21 14:05:00', '2025-03-21 14:10:00', 'ATTACK', 'B', '1', 'C', '2'),
-       (4, 2, '2025-03-21 14:15:00', '2025-03-21 14:20:00', 'MOVE', 'D', '3', 'E', '4'),
-       (5, 3, '2025-03-21 16:05:00', '2025-03-21 16:10:00', 'DEFEND', 'F', '1', 'G', '2'),
-       (6, 3, '2025-03-21 16:15:00', '2025-03-21 16:20:00', 'MOVE', 'H', '2', 'I', '3'),
-       (7, 4, '2025-03-21 17:05:00', '2025-03-21 17:10:00', 'MOVE', 'J', '1', 'K', '2'),
-       (8, 4, '2025-03-21 17:15:00', '2025-03-21 17:20:00', 'ATTACK', 'L', '3', 'M', '4');
+-- ajout d'index pour optimiser les requêtes
+create index idx_players_in_parties_id_party on dbo.players_in_parties(id_party);
+create index idx_turns_id_party on dbo.turns(id_party);
+create index idx_players_play_id_turn on dbo.players_play(id_turn);
